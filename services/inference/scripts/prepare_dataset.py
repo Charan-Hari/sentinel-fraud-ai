@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import random
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from datasets import load_dataset
 
-DATASET_NAME = "CiferAI/Cifer-Fraud-Detection-Dataset-AF"
+DATASET_NAME = "LordNR/AMLGraphX-Paysim"
 REQUIRED_COLUMNS = {
     "step",
     "type",
@@ -73,7 +74,7 @@ def main() -> None:
     if args.normal_limit < 1 or args.fraud_limit < 1 or args.max_rows_scanned < 1:
         raise ValueError("All limits must be positive integers.")
 
-    dataset = load_dataset(DATASET_NAME, split="train", streaming=True)
+    dataset = load_dataset(DATASET_NAME, "default", split="train", streaming=True)
 
     normal_records: list[dict[str, Any]] = []
     fraud_records: list[dict[str, Any]] = []
@@ -107,7 +108,7 @@ def main() -> None:
             "normalRecords": len(normal_records),
             "fraudRecords": len(fraud_records),
         },
-        "transactions": fraud_records + normal_records,
+        "transactions": random.Random(42).sample(fraud_records + normal_records, k=len(fraud_records + normal_records)),
     }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

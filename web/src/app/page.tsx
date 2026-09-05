@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
   ArrowUpRight,
   Bot,
   CircleDollarSign,
-  Clock3,
+  LoaderCircle,
   Search,
   ShieldAlert,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -26,114 +26,58 @@ import {
   YAxis,
 } from "recharts";
 
-type Severity = "Critical" | "High" | "Medium" | "Low";
+type RiskBand = "Critical" | "High" | "Medium" | "Low";
 
 type Alert = {
   id: string;
-  customer: string;
+  counterparty: string;
   amount: number;
   transactionType: string;
   riskScore: number;
-  severity: Severity;
-  time: string;
-  reason: string;
+  riskBand: RiskBand;
 };
 
-const riskTrend = [
-  { time: "08:00", alerts: 8 },
-  { time: "10:00", alerts: 12 },
-  { time: "12:00", alerts: 9 },
-  { time: "14:00", alerts: 19 },
-  { time: "16:00", alerts: 16 },
-  { time: "18:00", alerts: 27 },
-  { time: "20:00", alerts: 21 },
-];
+type Dashboard = {
+  source: string;
+  sampleSize: number;
+  metrics: {
+    transactionsMonitored: number;
+    reviewAlerts: number;
+    exposureUnderReview: number;
+    modelPrecision: number;
+    modelRecall: number;
+    rocAuc: number;
+  };
+  riskDistribution: Array<{ name: RiskBand; value: number; color: string }>;
+  riskTrend: Array<{ time: string; alerts: number }>;
+  alerts: Alert[];
+};
 
-const riskDistribution = [
-  { name: "Critical", value: 14, color: "#fb7185" },
-  { name: "High", value: 38, color: "#f59e0b" },
-  { name: "Medium", value: 74, color: "#38bdf8" },
-  { name: "Low", value: 196, color: "#64748b" },
-];
+const money = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
-const alerts: Alert[] = [
-  {
-    id: "ALT-84721",
-    customer: "Avery Morgan",
-    amount: 9842.5,
-    transactionType: "International transfer",
-    riskScore: 96,
-    severity: "Critical",
-    time: "2 min ago",
-    reason: "New beneficiary, unusual amount, and high-velocity activity",
-  },
-  {
-    id: "ALT-84718",
-    customer: "Jordan Lee",
-    amount: 4200,
-    transactionType: "Card payment",
-    riskScore: 89,
-    severity: "High",
-    time: "6 min ago",
-    reason: "Location anomaly and merchant-category deviation",
-  },
-  {
-    id: "ALT-84712",
-    customer: "Samira Patel",
-    amount: 7650,
-    transactionType: "Cash withdrawal",
-    riskScore: 84,
-    severity: "High",
-    time: "11 min ago",
-    reason: "Cash-out pattern exceeds the customer baseline",
-  },
-  {
-    id: "ALT-84703",
-    customer: "Taylor Brooks",
-    amount: 1980.75,
-    transactionType: "Bank transfer",
-    riskScore: 72,
-    severity: "Medium",
-    time: "18 min ago",
-    reason: "Beneficiary network has elevated risk signals",
-  },
-  {
-    id: "ALT-84696",
-    customer: "Morgan Chen",
-    amount: 860.2,
-    transactionType: "Online purchase",
-    riskScore: 64,
-    severity: "Medium",
-    time: "25 min ago",
-    reason: "Device and purchase behavior differ from the profile",
-  },
-];
-
-const severityClass: Record<Severity, string> = {
+const bandClass: Record<RiskBand, string> = {
   Critical: "border-rose-400/30 bg-rose-400/10 text-rose-300",
   High: "border-amber-400/30 bg-amber-400/10 text-amber-300",
   Medium: "border-sky-400/30 bg-sky-400/10 text-sky-300",
   Low: "border-slate-500/30 bg-slate-500/10 text-slate-300",
 };
 
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
 function MetricCard({
   label,
   value,
-  change,
+  detail,
   icon,
-  color,
+  accent,
 }: {
   label: string;
   value: string;
-  change: string;
-  icon: React.ReactNode;
-  color: string;
+  detail: string;
+  icon: ReactNode;
+  accent: string;
 }) {
   return (
     <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-xl shadow-slate-950/20">
@@ -142,36 +86,90 @@ function MetricCard({
           <p className="text-sm text-slate-400">{label}</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-white">{value}</p>
         </div>
-        <div className={`rounded-xl p-3 ${color}`}>{icon}</div>
+        <div className={`rounded-xl p-3 ${accent}`}>{icon}</div>
       </div>
-      <p className="mt-4 flex items-center gap-1 text-xs font-medium text-emerald-300">
-        <TrendingUp className="h-3.5 w-3.5" />
-        {change}
-        <span className="font-normal text-slate-500">vs. previous 24h</span>
+      <p className="mt-4 flex items-center gap-1 text-xs text-slate-500">
+        <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
+        {detail}
       </p>
     </article>
   );
 }
 
 export default function Home() {
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [query, setQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<Severity | "All">("All");
-  const [selectedAlertId, setSelectedAlertId] = useState(alerts[0].id);
+  const [riskFilter, setRiskFilter] = useState<RiskBand | "All">("All");
+  const [selectedId, setSelectedId] = useState("");
+  const [error, setError] = useState("");
 
-  const filteredAlerts = useMemo(
-    () =>
-      alerts.filter((alert) => {
-        const text = `${alert.id} ${alert.customer} ${alert.transactionType}`.toLowerCase();
-        return (
-          text.includes(query.toLowerCase()) &&
-          (severityFilter === "All" || alert.severity === severityFilter)
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        const response = await fetch("/api/dashboard", { cache: "no-store" });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to load Sentinel data.");
+        }
+
+        const loadedDashboard = payload as Dashboard;
+        setDashboard(loadedDashboard);
+        setSelectedId(loadedDashboard.alerts[0]?.id ?? "");
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load Sentinel data.",
         );
-      }),
-    [query, severityFilter],
-  );
+      }
+    }
+
+    void loadDashboard();
+  }, []);
+
+  const alerts = useMemo(() => {
+    if (!dashboard) {
+      return [];
+    }
+
+    return dashboard.alerts.filter((alert) => {
+      const matchesQuery = `${alert.id} ${alert.counterparty} ${alert.transactionType}`
+        .toLowerCase()
+        .includes(query.toLowerCase());
+
+      return matchesQuery && (riskFilter === "All" || alert.riskBand === riskFilter);
+    });
+  }, [dashboard, query, riskFilter]);
 
   const selectedAlert =
-    alerts.find((alert) => alert.id === selectedAlertId) ?? alerts[0];
+    alerts.find((alert) => alert.id === selectedId) ??
+    dashboard?.alerts.find((alert) => alert.id === selectedId) ??
+    alerts[0];
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#060b16] p-6 text-slate-100">
+        <section className="max-w-lg rounded-2xl border border-rose-400/30 bg-slate-900 p-6">
+          <ShieldAlert className="h-8 w-8 text-rose-300" />
+          <h1 className="mt-4 text-xl font-semibold">Dashboard connection failed</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-400">{error}</p>
+          <p className="mt-4 text-xs text-slate-500">
+            Confirm FastAPI is running on port 8000.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!dashboard) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#060b16] text-slate-300">
+        <LoaderCircle className="mr-3 h-5 w-5 animate-spin text-cyan-300" />
+        Loading Sentinel risk intelligence...
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#060b16] text-slate-100">
@@ -191,95 +189,69 @@ export default function Home() {
               Fraud risk overview
             </h1>
             <p className="mt-1 text-sm text-slate-400">
-              Live monitoring preview using synthetic transaction data.
+              Model-scored monitoring from {dashboard.source}.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-400">
-              <Clock3 className="mr-2 inline h-4 w-4 text-cyan-300" />
-              Last refreshed: just now
-            </div>
-            <button className="rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-              Review critical alerts
-            </button>
-          </div>
+          <Link
+            className="inline-flex items-center justify-center rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            href="/investigations"
+          >
+            Open investigation workspace
+            <ArrowUpRight className="ml-2 h-4 w-4" />
+          </Link>
         </header>
 
         <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            label="Transactions monitored"
-            value="24,892"
-            change="+12.8%"
-            color="bg-cyan-400/10 text-cyan-300"
+            accent="bg-cyan-400/10 text-cyan-300"
+            detail={`Sample of ${dashboard.sampleSize.toLocaleString()} transactions`}
             icon={<Activity className="h-5 w-5" />}
+            label="Transactions monitored"
+            value={dashboard.metrics.transactionsMonitored.toLocaleString()}
           />
           <MetricCard
-            label="High-risk alerts"
-            value="52"
-            change="+18.2%"
-            color="bg-rose-400/10 text-rose-300"
+            accent="bg-rose-400/10 text-rose-300"
+            detail="Scores at or above review threshold"
             icon={<AlertTriangle className="h-5 w-5" />}
+            label="Review alerts"
+            value={dashboard.metrics.reviewAlerts.toLocaleString()}
           />
           <MetricCard
-            label="Exposure under review"
-            value="$186.4K"
-            change="+6.4%"
-            color="bg-amber-400/10 text-amber-300"
+            accent="bg-amber-400/10 text-amber-300"
+            detail="Value associated with review alerts"
             icon={<CircleDollarSign className="h-5 w-5" />}
+            label="Exposure under review"
+            value={money.format(dashboard.metrics.exposureUnderReview)}
           />
           <MetricCard
-            label="Model precision"
-            value="94.2%"
-            change="+2.1%"
-            color="bg-emerald-400/10 text-emerald-300"
+            accent="bg-emerald-400/10 text-emerald-300"
+            detail={`Recall ${dashboard.metrics.modelRecall}% · ROC-AUC ${dashboard.metrics.rocAuc}`}
             icon={<ShieldCheck className="h-5 w-5" />}
+            label="Synthetic test precision"
+            value={`${dashboard.metrics.modelPrecision}%`}
           />
         </section>
 
         <section className="mt-7 grid gap-5 xl:grid-cols-[1.65fr_1fr]">
           <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-semibold text-white">Alert activity</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Flagged transactions over the last 12 hours
-                </p>
-              </div>
-              <span className="rounded-lg bg-rose-400/10 px-2.5 py-1 text-xs font-medium text-rose-300">
-                +28% peak activity
-              </span>
-            </div>
+            <h2 className="font-semibold text-white">Scored alert activity</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Review-threshold alerts by transaction hour
+            </p>
             <div className="mt-6 h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={riskTrend}>
+              <ResponsiveContainer height="100%" width="100%">
+                <AreaChart data={dashboard.riskTrend}>
                   <defs>
-                    <linearGradient id="alertGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="alertGradient" x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.45} />
                       <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis
-                    dataKey="time"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#64748b", fontSize: 12 }}
-                  />
+                  <XAxis axisLine={false} dataKey="time" tick={{ fill: "#64748b", fontSize: 12 }} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#0f172a",
-                      border: "1px solid #334155",
-                      borderRadius: "12px",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="alerts"
-                    stroke="#22d3ee"
-                    strokeWidth={3}
-                    fill="url(#alertGradient)"
-                  />
+                  <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: "12px" }} />
+                  <Area dataKey="alerts" fill="url(#alertGradient)" stroke="#22d3ee" strokeWidth={3} type="monotone" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -287,31 +259,22 @@ export default function Home() {
 
           <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
             <h2 className="font-semibold text-white">Risk distribution</h2>
-            <p className="mt-1 text-sm text-slate-400">Open alerts by severity</p>
+            <p className="mt-1 text-sm text-slate-400">Model risk bands across the monitored sample</p>
             <div className="relative mt-2 h-52">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer height="100%" width="100%">
                 <PieChart>
-                  <Pie
-                    data={riskDistribution}
-                    dataKey="value"
-                    innerRadius={60}
-                    outerRadius={82}
-                    paddingAngle={4}
-                    stroke="none"
-                  >
-                    {riskDistribution.map((item) => (
-                      <Cell fill={item.color} key={item.name} />
-                    ))}
+                  <Pie data={dashboard.riskDistribution} dataKey="value" innerRadius={60} outerRadius={82} paddingAngle={4} stroke="none">
+                    {dashboard.riskDistribution.map((item) => <Cell fill={item.color} key={item.name} />)}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold text-white">322</span>
-                <span className="text-xs text-slate-500">Open alerts</span>
+                <span className="text-3xl font-bold text-white">{dashboard.sampleSize}</span>
+                <span className="text-xs text-slate-500">Transactions</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-y-3 text-sm">
-              {riskDistribution.map((item) => (
+              {dashboard.riskDistribution.map((item) => (
                 <div className="flex items-center gap-2 text-slate-400" key={item.name}>
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                   {item.name}
@@ -326,16 +289,14 @@ export default function Home() {
           <article className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
             <div className="flex flex-col gap-4 border-b border-slate-800 p-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="font-semibold text-white">Priority alert queue</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Review and escalate high-confidence risk signals.
-                </p>
+                <h2 className="font-semibold text-white">Priority review queue</h2>
+                <p className="mt-1 text-sm text-slate-400">Highest model-scored transactions.</p>
               </div>
               <div className="flex gap-2">
                 <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
                   <Search className="mr-2 h-4 w-4 text-slate-500" />
                   <input
-                    className="w-40 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
+                    className="w-40 bg-transparent text-sm outline-none placeholder:text-slate-600"
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Search alerts"
                     value={query}
@@ -343,67 +304,31 @@ export default function Home() {
                 </div>
                 <select
                   className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 outline-none"
-                  onChange={(event) => setSeverityFilter(event.target.value as Severity | "All")}
-                  value={severityFilter}
+                  onChange={(event) => setRiskFilter(event.target.value as RiskBand | "All")}
+                  value={riskFilter}
                 >
-                  <option>All</option>
-                  <option>Critical</option>
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
+                  <option>All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
                 </select>
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[700px] text-left text-sm">
                 <thead className="bg-slate-950/60 text-xs uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-5 py-4 font-medium">Alert</th>
-                    <th className="px-5 py-4 font-medium">Transaction</th>
-                    <th className="px-5 py-4 font-medium">Risk score</th>
-                    <th className="px-5 py-4 font-medium">Severity</th>
-                    <th className="px-5 py-4 font-medium">Time</th>
-                  </tr>
+                  <tr><th className="px-5 py-4">Alert</th><th className="px-5 py-4">Transaction</th><th className="px-5 py-4">Risk score</th><th className="px-5 py-4">Band</th></tr>
                 </thead>
                 <tbody>
-                  {filteredAlerts.map((alert) => (
-                    <tr
-                      className={`border-t border-slate-800 transition hover:bg-slate-800/60 ${
-                        selectedAlertId === alert.id ? "bg-cyan-400/5" : ""
-                      }`}
-                      key={alert.id}
-                    >
+                  {alerts.map((alert) => (
+                    <tr className={`border-t border-slate-800 transition hover:bg-slate-800/60 ${selectedAlert?.id === alert.id ? "bg-cyan-400/5" : ""}`} key={alert.id}>
                       <td className="px-5 py-4">
-                        <button
-                          className="text-left"
-                          onClick={() => setSelectedAlertId(alert.id)}
-                        >
-                          <p className="font-medium text-slate-100">{alert.customer}</p>
+                        <button className="text-left" onClick={() => setSelectedId(alert.id)}>
+                          <p className="font-medium text-slate-100">{alert.counterparty}</p>
                           <p className="mt-1 text-xs text-slate-500">{alert.id}</p>
                         </button>
                       </td>
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-slate-200">{currency.format(alert.amount)}</p>
-                        <p className="mt-1 text-xs text-slate-500">{alert.transactionType}</p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-800">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-400"
-                              style={{ width: `${alert.riskScore}%` }}
-                            />
-                          </div>
-                          <span className="font-semibold text-slate-100">{alert.riskScore}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${severityClass[alert.severity]}`}>
-                          {alert.severity}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-400">{alert.time}</td>
+                      <td className="px-5 py-4"><p className="font-medium text-slate-200">{money.format(alert.amount)}</p><p className="mt-1 text-xs text-slate-500">{alert.transactionType}</p></td>
+                      <td className="px-5 py-4"><span className="font-semibold text-slate-100">{alert.riskScore}</span><span className="text-slate-500">/100</span></td>
+                      <td className="px-5 py-4"><span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${bandClass[alert.riskBand]}`}>{alert.riskBand}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -414,54 +339,30 @@ export default function Home() {
           <article className="rounded-2xl border border-cyan-400/15 bg-gradient-to-b from-cyan-400/[0.07] to-slate-900/80 p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-300">
-                  Selected investigation
-                </p>
-                <h2 className="mt-2 text-xl font-semibold text-white">{selectedAlert.id}</h2>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-300">Selected alert</p>
+                <h2 className="mt-2 text-xl font-semibold text-white">{selectedAlert?.id ?? "No matching alert"}</h2>
               </div>
               <Bot className="h-6 w-6 text-cyan-300" />
             </div>
 
-            <div className="mt-5 rounded-xl border border-slate-700/80 bg-slate-950/50 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">AI risk score</span>
-                <span className="text-3xl font-bold text-rose-300">
-                  {selectedAlert.riskScore}<span className="text-base text-slate-500">/100</span>
-                </span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-400"
-                  style={{ width: `${selectedAlert.riskScore}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <p className="text-sm font-medium text-slate-200">Evidence summary</p>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{selectedAlert.reason}.</p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {[
-                ["Behavior deviation", "High impact", "text-rose-300"],
-                ["Account network signal", "Elevated", "text-amber-300"],
-                ["Known fraud pattern", "Under review", "text-cyan-300"],
-              ].map(([label, value, color]) => (
-                <div className="flex items-center justify-between rounded-lg bg-slate-950/40 px-3 py-2.5" key={label}>
-                  <span className="text-sm text-slate-400">{label}</span>
-                  <span className={`text-xs font-medium ${color}`}>{value}</span>
+            {selectedAlert && (
+              <>
+                <div className="mt-5 rounded-xl border border-slate-700 bg-slate-950/50 p-4">
+                  <p className="text-sm text-slate-400">Model risk score</p>
+                  <p className="mt-2 text-4xl font-bold text-rose-300">{selectedAlert.riskScore}<span className="text-base text-slate-500">/100</span></p>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-400" style={{ width: `${selectedAlert.riskScore}%` }} />
+                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="rounded-lg bg-slate-950/40 p-3"><p className="text-slate-500">Masked counterparty</p><p className="mt-1 font-medium text-slate-200">{selectedAlert.counterparty}</p></div>
+                  <div className="rounded-lg bg-slate-950/40 p-3"><p className="text-slate-500">Transaction type</p><p className="mt-1 font-medium text-slate-200">{selectedAlert.transactionType}</p></div>
+                </div>
+              </>
+            )}
 
-            <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white">
-              Open investigation workspace
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
-            <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-slate-500">
-              <Sparkles className="h-3 w-3" />
-              Synthetic demo data. Human review required.
+            <p className="mt-6 text-xs leading-5 text-slate-500">
+              Synthetic data only. Scores support triage and require qualified human review.
             </p>
           </article>
         </section>

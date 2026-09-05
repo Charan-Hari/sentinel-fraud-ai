@@ -2,10 +2,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import joblib
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.dashboard import build_dashboard
 from app.features import build_features
 
 MODEL_PATH = Path(__file__).resolve().parents[1] / "artifacts" / "fraud_model.joblib"
@@ -126,3 +127,8 @@ def score_transaction(transaction: TransactionRequest) -> FraudScoreResponse:
         supportingSignals=supporting_signals(transaction),
         modelVersion="0.1.0-synthetic-demo",
     )
+
+
+@app.get("/dashboard")
+def dashboard(limit: int = Query(default=1000, ge=50, le=5000)) -> dict:
+    return build_dashboard(app.state.model, limit)
