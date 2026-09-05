@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.dashboard import build_dashboard
 from app.features import build_features
+from app.governance import governance_snapshot
 
 MODEL_PATH = Path(__file__).resolve().parents[1] / "artifacts" / "fraud_model.joblib"
 
@@ -132,3 +133,7 @@ def score_transaction(transaction: TransactionRequest) -> FraudScoreResponse:
 @app.get("/dashboard")
 def dashboard(limit: int = Query(default=1000, ge=50, le=5000)) -> dict:
     return build_dashboard(app.state.model, limit)
+
+@app.get("/governance")
+def governance() -> dict:
+    return governance_snapshot()

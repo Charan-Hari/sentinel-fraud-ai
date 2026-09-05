@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -131,6 +131,7 @@ def main() -> None:
 
     probabilities = pipeline.predict_proba(x_test)[:, 1]
     predictions = (probabilities >= 0.5).astype(int)
+    matrix = confusion_matrix(y_test, predictions)
 
     metrics = {
         "datasetSource": payload.get("source"),
@@ -141,6 +142,12 @@ def main() -> None:
         "recall": round(float(recall_score(y_test, predictions, zero_division=0)), 4),
         "f1Score": round(float(f1_score(y_test, predictions, zero_division=0)), 4),
         "rocAuc": round(float(roc_auc_score(y_test, probabilities)), 4),
+        "confusionMatrix": {
+            "trueNegative": int(matrix[0][0]),
+            "falsePositive": int(matrix[0][1]),
+            "falseNegative": int(matrix[1][0]),
+            "truePositive": int(matrix[1][1]),
+        },
         "decisionThreshold": 0.5,
         "modelType": "RandomForestClassifier",
         "dataNotice": "Metrics are from synthetic data and are not production performance claims.",
