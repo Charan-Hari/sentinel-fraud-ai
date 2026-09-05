@@ -6,6 +6,7 @@ on:
     paths:
       - "showcase/**"
       - ".github/workflows/deploy-showcase.yml"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,21 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Hugging Face CLI
-        run: pip install huggingface_hub
-
-      - name: Authenticate with Hugging Face
-        run: hf auth login --token "${{ secrets.HF_SPACE_TOKEN }}" --add-to-git-credential
-
       - name: Publish Static Space
+        env:
+          HF_SPACE_TOKEN: ${{ secrets.HF_SPACE_TOKEN }}
         run: |
           git clone https://huggingface.co/spaces/harywiz/sentinel-fraud-showcase space
+
           find space -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -R showcase/. space/
 
           cd space
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add .
           git diff --cached --quiet || git commit -m "deploy: update Sentinel showcase"
+
+          git remote set-url origin "https://user:${HF_SPACE_TOKEN}@huggingface.co/spaces/harywiz/sentinel-fraud-showcase"
           git push
