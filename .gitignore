@@ -24,3 +24,4 @@ services/inference/artifacts/
 
 # Local case-workflow database
 services/inference/data/
+node_modules
