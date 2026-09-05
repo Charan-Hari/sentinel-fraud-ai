@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  ArrowUpRight,
   Bot,
   CircleDollarSign,
   LoaderCircle,
@@ -36,6 +37,14 @@ type Alert = {
   transactionType: string;
   riskScore: number;
   riskBand: RiskBand;
+  investigationInput: {
+    transactionType: string;
+    amount: number;
+    originBalanceBefore: number;
+    originBalanceAfter: number;
+    destinationBalanceBefore: number;
+    destinationBalanceAfter: number;
+  };
 };
 
 type Dashboard = {
@@ -185,6 +194,12 @@ export default function Home() {
       </main>
     );
   }
+
+  const investigationUrl = selectedAlert
+    ? `/investigations?${new URLSearchParams(
+        Object.entries(selectedAlert.investigationInput).map(([key, value]) => [key, String(value)]),
+      ).toString()}`
+    : "/investigations";
 
   const metricDetails: Record<MetricKey, { title: string; description: string }> = {
     transactions: {
@@ -438,6 +453,16 @@ export default function Home() {
                   <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Transaction type</p><p className="mt-1 font-medium text-slate-800">{selectedAlert.transactionType}</p></div>
                 </div>
               </>
+            )}
+
+            {selectedAlert && (
+              <Link
+                className="mt-6 flex w-full items-center justify-center rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                href={investigationUrl}
+              >
+                Investigate selected transaction
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
             )}
 
             <p className="mt-6 text-xs leading-5 text-slate-500">

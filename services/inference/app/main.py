@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Query, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.copilot import generate_case_summary
 from app.dashboard import build_dashboard
 from app.features import build_features
 from app.governance import governance_snapshot
@@ -33,6 +34,13 @@ class FraudScoreResponse(BaseModel):
     decision: str
     supportingSignals: list[RiskSignal]
     modelVersion: str
+
+
+class CaseSummaryRequest(BaseModel):
+    transaction: TransactionRequest
+    riskScore: float = Field(ge=0, le=100)
+    riskBand: str = Field(min_length=1, max_length=20)
+    supportingSignals: list[RiskSignal] = Field(max_length=10)
 
 
 class IngestionRequest(BaseModel):
@@ -190,4 +198,24 @@ def ingest_transactions(payload: IngestionRequest) -> dict:
         },
         "alerts": alerts[:50],
         "notice": "Uploaded data is scored in-memory for this session and is not persisted.",
+    }
+
+@app.post("/case-summary")
+def case_summary(payload: CaseSummaryRequest) -> dict:
+    try:
+        summary = generate_case_summary(
+            transaction=payload.transaction.model_dump(),
+            risk_score=payload.riskScore,
+            risk_band=payload.riskBand,
+            supporting_signals=[
+                signal.model_dump() for signal in payload.supportingSignals
+            ],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+    return {
+        "summary": summary,
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "notice": "AI output is an investigator aid and requires human review.",
     }

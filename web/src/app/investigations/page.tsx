@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { Suspense, type FormEvent, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Bot,
@@ -51,11 +52,15 @@ const fields: Array<{
 const inputClass =
   "mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-4 focus:ring-cyan-100";
 
-export default function InvestigationsPage() {
+function InvestigationWorkspace() {
   const [values, setValues] = useState<FormValues>(initialValues);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadedFromDashboard, setLoadedFromDashboard] = useState(false);
+  const [brief, setBrief] = useState("");
+  const [briefLoading, setBriefLoading] = useState(false);
+  const searchParams = useSearchParams();
 
   function updateValue(key: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -103,6 +108,44 @@ export default function InvestigationsPage() {
     setLoading(false);
   }
 
+  async function generateBrief() {
+    if (!result) {
+      return;
+    }
+
+    setBriefLoading(true);
+    setError("");
+
+    const response = await fetch("/api/case-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transaction: {
+          transactionType: values.transactionType,
+          amount: Number(values.amount),
+          originBalanceBefore: Number(values.originBalanceBefore),
+          originBalanceAfter: Number(values.originBalanceAfter),
+          destinationBalanceBefore: Number(values.destinationBalanceBefore),
+          destinationBalanceAfter: Number(values.destinationBalanceAfter),
+        },
+        riskScore: result.riskScore,
+        riskBand: result.riskBand,
+        supportingSignals: result.supportingSignals,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setError(payload.error ?? "Unable to generate an AI investigator brief.");
+      setBriefLoading(false);
+      return;
+    }
+
+    setBrief(payload.summary);
+    setBriefLoading(false);
+  }
+
   const scoreColor =
     result?.riskBand === "Critical"
       ? "#be123c"
@@ -141,6 +184,24 @@ export default function InvestigationsPage() {
                 <p className="mt-1 text-sm text-slate-600">Synthetic data fields used by Sentinel&apos;s trained model.</p>
               </div>
             </div>
+
+            {loadedFromDashboard && (
+              <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3">
+                <p className="text-sm font-medium text-cyan-900">
+                  Transaction loaded from the risk overview.
+                </p>
+                <button
+                  className="text-xs font-semibold text-cyan-800 hover:text-cyan-950"
+                  onClick={() => {
+                    setValues(initialValues);
+                    setLoadedFromDashboard(false);
+                  }}
+                  type="button"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
 
             <label className="mt-7 block text-sm font-medium text-slate-700">
               Transaction type
@@ -243,5 +304,20 @@ export default function InvestigationsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+
+export default function InvestigationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-700">
+          Loading investigation workspace...
+        </main>
+      }
+    >
+      <InvestigationWorkspace />
+    </Suspense>
   );
 }

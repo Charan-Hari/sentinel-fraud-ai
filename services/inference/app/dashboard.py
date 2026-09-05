@@ -113,6 +113,14 @@ def build_dashboard(model: Any, limit: int, dataset: str = "baseline") -> dict[s
                     "transactionType": record["transactionType"],
                     "riskScore": score,
                     "riskBand": band,
+                    "investigationInput": {
+                        "transactionType": record["transactionType"],
+                        "amount": record["amount"],
+                        "originBalanceBefore": record["originBalanceBefore"],
+                        "originBalanceAfter": record["originBalanceAfter"],
+                        "destinationBalanceBefore": record["destinationBalanceBefore"],
+                        "destinationBalanceAfter": record["destinationBalanceAfter"],
+                    },
                 }
             )
 
