@@ -8,5 +8,3 @@ pinned: false
 ---
 
 # Sentinel Fraud Risk Command Center
-
-Static portfolio showcase for the Sentinel fraud-risk platform.
