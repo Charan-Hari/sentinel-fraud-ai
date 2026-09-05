@@ -1,0 +1,26 @@
+# JavaScript
+node_modules/
+.next/
+out/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local data and secrets
+data/raw/
+data/processed/
+.env
+.env.*
+!.env.example
+
+# Editor and system files
+.vscode/
+.DS_Store
+
+# Local trained-model artifacts
+services/inference/artifacts/
+
+# Local case-workflow database
+services/inference/data/
