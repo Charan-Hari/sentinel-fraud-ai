@@ -49,9 +49,9 @@ function ScoreCard({
   description: string;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-emerald-300">{value}</p>
+    <article className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+      <p className="text-sm text-slate-600">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight text-emerald-700">{value}</p>
       <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
     </article>
   );
@@ -86,11 +86,11 @@ export default function GovernancePage() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#060b16] p-6 text-slate-100">
-        <section className="max-w-lg rounded-2xl border border-rose-400/30 bg-slate-900 p-6">
-          <TriangleAlert className="h-8 w-8 text-rose-300" />
+      <main className="flex min-h-screen items-center justify-center bg-transparent p-6 text-slate-900">
+        <section className="max-w-lg rounded-2xl border border-rose-400/30 bg-white p-6">
+          <TriangleAlert className="h-8 w-8 text-rose-700" />
           <h1 className="mt-4 text-xl font-semibold">Governance data unavailable</h1>
-          <p className="mt-2 text-sm text-slate-400">{error}</p>
+          <p className="mt-2 text-sm text-slate-600">{error}</p>
         </section>
       </main>
     );
@@ -98,8 +98,8 @@ export default function GovernancePage() {
 
   if (!data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#060b16] text-slate-300">
-        <LoaderCircle className="mr-3 h-5 w-5 animate-spin text-cyan-300" />
+      <main className="flex min-h-screen items-center justify-center bg-transparent text-slate-700">
+        <LoaderCircle className="mr-3 h-5 w-5 animate-spin text-cyan-700" />
         Loading model governance...
       </main>
     );
@@ -109,26 +109,26 @@ export default function GovernancePage() {
   const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
 
   return (
-    <main className="min-h-screen bg-[#060b16] px-5 py-8 text-slate-100 md:px-8">
+    <main className="min-h-screen bg-transparent px-5 py-8 text-slate-900 md:px-8">
       <div className="mx-auto max-w-7xl">
-        <Link className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-300" href="/">
+        <Link className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-cyan-700" href="/">
           <ArrowLeft className="h-4 w-4" />
           Back to risk overview
         </Link>
 
-        <header className="mt-7 flex flex-col gap-4 border-b border-slate-800 pb-7 md:flex-row md:items-end md:justify-between">
+        <header className="mt-7 flex flex-col gap-4 border-b border-slate-200 pb-7 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-300">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">
               Explainable risk operations
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
               Model governance
             </h1>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-600">
               Evaluation evidence, model lineage, and operational guardrails.
             </p>
           </div>
-          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-sm text-emerald-200">
+          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-sm text-emerald-800">
             <ShieldCheck className="mr-2 inline h-4 w-4" />
             Evaluation record available
           </div>
@@ -142,14 +142,14 @@ export default function GovernancePage() {
         </section>
 
         <section className="mt-7 grid gap-5 xl:grid-cols-[1fr_1.2fr]">
-          <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+          <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-300">
+              <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-700">
                 <BarChart3 className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-white">Held-out test confusion matrix</h2>
-                <p className="mt-1 text-sm text-slate-400">Decision threshold: {data.model.decisionThreshold}</p>
+                <h2 className="font-semibold text-slate-950">Held-out test confusion matrix</h2>
+                <p className="mt-1 text-sm text-slate-600">Decision threshold: {data.model.decisionThreshold}</p>
               </div>
             </div>
 
@@ -160,34 +160,34 @@ export default function GovernancePage() {
 
               <p className="flex items-center justify-end pr-2 text-slate-500">Actual normal</p>
               <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5">
-                <p className="text-3xl font-bold text-emerald-300">{matrix.trueNegative}</p>
+                <p className="text-3xl font-bold text-emerald-700">{matrix.trueNegative}</p>
                 <p className="mt-1 text-xs text-emerald-100">True negatives</p>
               </div>
               <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-5">
-                <p className="text-3xl font-bold text-rose-300">{matrix.falsePositive}</p>
+                <p className="text-3xl font-bold text-rose-700">{matrix.falsePositive}</p>
                 <p className="mt-1 text-xs text-rose-100">False positives</p>
               </div>
 
               <p className="flex items-center justify-end pr-2 text-slate-500">Actual fraud</p>
               <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
-                <p className="text-3xl font-bold text-amber-300">{matrix.falseNegative}</p>
+                <p className="text-3xl font-bold text-amber-700">{matrix.falseNegative}</p>
                 <p className="mt-1 text-xs text-amber-100">False negatives</p>
               </div>
               <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-5">
-                <p className="text-3xl font-bold text-cyan-300">{matrix.truePositive}</p>
+                <p className="text-3xl font-bold text-cyan-700">{matrix.truePositive}</p>
                 <p className="mt-1 text-xs text-cyan-100">True positives</p>
               </div>
             </div>
           </article>
 
-          <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+          <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-violet-400/10 p-3 text-violet-300">
                 <Database className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-white">Model lineage</h2>
-                <p className="mt-1 text-sm text-slate-400">Traceable inputs for this evaluation record.</p>
+                <h2 className="font-semibold text-slate-950">Model lineage</h2>
+                <p className="mt-1 text-sm text-slate-600">Traceable inputs for this evaluation record.</p>
               </div>
             </div>
 
@@ -200,9 +200,9 @@ export default function GovernancePage() {
                 ["Held-out test records", data.dataset.testRecords.toLocaleString()],
                 ["Test fraud rate", percent(data.dataset.testFraudRate)],
               ].map(([label, value]) => (
-                <div className="flex items-center justify-between rounded-xl bg-slate-950/50 px-4 py-3" key={label}>
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3" key={label}>
                   <span className="text-sm text-slate-500">{label}</span>
-                  <span className="max-w-[60%] truncate text-right text-sm font-medium text-slate-200">{value}</span>
+                  <span className="max-w-[60%] truncate text-right text-sm font-medium text-slate-800">{value}</span>
                 </div>
               ))}
             </div>
@@ -211,13 +211,13 @@ export default function GovernancePage() {
 
         <section className="mt-7 rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-6">
           <div className="flex items-center gap-3">
-            <TriangleAlert className="h-5 w-5 text-amber-300" />
-            <h2 className="font-semibold text-white">Required use limitations</h2>
+            <TriangleAlert className="h-5 w-5 text-amber-700" />
+            <h2 className="font-semibold text-slate-950">Required use limitations</h2>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             {data.limitations.map((limitation) => (
-              <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4 text-sm leading-6 text-slate-400" key={limitation}>
-                <CheckCircle2 className="mb-3 h-4 w-4 text-amber-300" />
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600" key={limitation}>
+                <CheckCircle2 className="mb-3 h-4 w-4 text-amber-700" />
                 {limitation}
               </div>
             ))}

@@ -35,6 +35,10 @@ class FraudScoreResponse(BaseModel):
     modelVersion: str
 
 
+class IngestionRequest(BaseModel):
+    transactions: list[TransactionRequest] = Field(min_length=1, max_length=1000)
+
+
 def risk_band(probability: float) -> str:
     if probability >= 0.9:
         return "Critical"
@@ -86,6 +90,7 @@ async def lifespan(app: FastAPI):
         )
 
     app.state.model = joblib.load(MODEL_PATH)
+    app.state.dashboard_cache = {}
     yield
 
 
@@ -131,9 +136,58 @@ def score_transaction(transaction: TransactionRequest) -> FraudScoreResponse:
 
 
 @app.get("/dashboard")
-def dashboard(limit: int = Query(default=1000, ge=50, le=5000)) -> dict:
-    return build_dashboard(app.state.model, limit)
+def dashboard(
+    dataset: str = Query(default="baseline", pattern="^(baseline|routine|mixed|escalation)$"),
+    limit: int = Query(default=1000, ge=1, le=5000),
+) -> dict:
+    cache_key = f"{dataset}:{limit}"
+    cached_dashboard = app.state.dashboard_cache.get(cache_key)
+
+    if cached_dashboard is None:
+        cached_dashboard = build_dashboard(app.state.model, limit, dataset)
+        app.state.dashboard_cache[cache_key] = cached_dashboard
+
+    return cached_dashboard
 
 @app.get("/governance")
 def governance() -> dict:
     return governance_snapshot()
+
+@app.post("/ingest")
+def ingest_transactions(payload: IngestionRequest) -> dict:
+    records = [transaction.model_dump() for transaction in payload.transactions]
+    probabilities = app.state.model.predict_proba(build_features(records))[:, 1]
+
+    risk_band_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+    alerts = []
+
+    for row_number, (transaction, probability) in enumerate(
+        zip(records, probabilities, strict=True),
+        start=1,
+    ):
+        score = round(float(probability) * 100, 2)
+        band = risk_band(float(probability))
+        risk_band_counts[band] += 1
+
+        if score >= 50:
+            alerts.append(
+                {
+                    "rowNumber": row_number,
+                    "transactionType": transaction["transactionType"],
+                    "amount": transaction["amount"],
+                    "riskScore": score,
+                    "riskBand": band,
+                }
+            )
+
+    alerts.sort(key=lambda alert: alert["riskScore"], reverse=True)
+
+    return {
+        "summary": {
+            "transactionsScored": len(records),
+            "reviewAlerts": len(alerts),
+            "riskBandCounts": risk_band_counts,
+        },
+        "alerts": alerts[:50],
+        "notice": "Uploaded data is scored in-memory for this session and is not persisted.",
+    }
