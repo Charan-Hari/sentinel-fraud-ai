@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">Sentinel Fraud Risk Command Center architecture</title>
+  <desc id="desc">Analysts use a Next.js dashboard connected to FastAPI, a trained fraud model, SQLite audit storage, and Hugging Face AI inference.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#eff6ff"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/>
+    </marker>
+    <style>
+      .title { font: 700 34px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 17px Arial, sans-serif; fill: #475569; }
+      .label { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 14px Arial, sans-serif; fill: #475569; }
+      .small { font: 700 12px Arial, sans-serif; fill: #0369a1; letter-spacing: 1px; }
+      .line { stroke: #64748b; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1400" height="760" fill="url(#bg)"/>
+  <text x="70" y="72" class="title">Sentinel Fraud Risk Command Center</text>
+  <text x="70" y="105" class="subtitle">Explainable fraud triage with model scoring, human review, and auditable case decisions</text>
+
+  <rect x="70" y="180" width="250" height="150" rx="20" fill="#ffffff" stroke="#bae6fd" stroke-width="2"/>
+  <text x="100" y="220" class="small">ANALYST EXPERIENCE</text>
+  <text x="100" y="255" class="label">Next.js UI</text>
+  <text x="100" y="285" class="text">Dashboard, CSV intake,</text>
+  <text x="100" y="307" class="text">investigation, governance</text>
+
+  <rect x="450" y="180" width="270" height="150" rx="20" fill="#ffffff" stroke="#a5b4fc" stroke-width="2"/>
+  <text x="480" y="220" class="small">APPLICATION LAYER</text>
+  <text x="480" y="255" class="label">FastAPI Risk API</text>
+  <text x="480" y="285" class="text">Validated scoring, batch intake,</text>
+  <text x="480" y="307" class="text">case workflow, governance</text>
+
+  <rect x="850" y="155" width="270" height="170" rx="20" fill="#ffffff" stroke="#86efac" stroke-width="2"/>
+  <text x="880" y="195" class="small">ML DECISION SUPPORT</text>
+  <text x="880" y="230" class="label">Fraud Risk Model</text>
+  <text x="880" y="260" class="text">Random Forest classifier</text>
+  <text x="880" y="282" class="text">risk band and review signals</text>
+
+  <rect x="850" y="405" width="270" height="150" rx="20" fill="#ffffff" stroke="#c4b5fd" stroke-width="2"/>
+  <text x="880" y="445" class="small">AI INVESTIGATOR AID</text>
+  <text x="880" y="480" class="label">Hugging Face + LangChain</text>
+  <text x="880" y="510" class="text">Evidence-grounded case brief</text>
+  <text x="880" y="532" class="text">Human review required</text>
+
+  <rect x="450" y="435" width="270" height="150" rx="20" fill="#ffffff" stroke="#fbbf24" stroke-width="2"/>
+  <text x="480" y="475" class="small">AUDITABILITY</text>
+  <text x="480" y="510" class="label">SQLite Case Store</text>
+  <text x="480" y="540" class="text">Open, escalate, close</text>
+  <text x="480" y="562" class="text">Immutable timestamped events</text>
+
+  <rect x="70" y="440" width="250" height="150" rx="20" fill="#ffffff" stroke="#67e8f9" stroke-width="2"/>
+  <text x="100" y="480" class="small">DATA AND TRAINING</text>
+  <text x="100" y="515" class="label">Hugging Face PaySim</text>
+  <text x="100" y="545" class="text">Synthetic transactions</text>
+  <text x="100" y="567" class="text">Scenario datasets and training</text>
+
+  <line x1="320" y1="255" x2="450" y2="255" class="line"/>
+  <line x1="720" y1="255" x2="850" y2="240" class="line"/>
+  <line x1="720" y1="285" x2="850" y2="465" class="line"/>
+  <line x1="585" y1="330" x2="585" y2="435" class="line"/>
+  <line x1="320" y1="515" x2="450" y2="515" class="line"/>
+
+  <rect x="70" y="660" width="1050" height="44" rx="12" fill="#0f172a"/>
+  <text x="95" y="688" style="font:600 15px Arial,sans-serif;fill:#ffffff">
+    Guardrail: Synthetic data only. Scores and AI summaries support triage; qualified investigators make all decisions.
+  </text>
+</svg>

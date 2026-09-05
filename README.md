@@ -45,9 +45,13 @@ Fraud analysts need more than a raw anomaly score. They need to understand the e
 
 ## Demo video
 
-[Watch the Sentinel workflow demo](docs/demo/sentinel-demo.webm)
+[![Watch the Sentinel workflow demo](docs/demo/sentinel-demo-thumbnail.png)](docs/demo/sentinel-demo.webm)
+
+_Click the preview to watch the 1-minute workflow demo._
 
 ## Architecture
+
+![Sentinel system architecture](docs/architecture.svg)
 
 ```mermaid
 flowchart LR
