@@ -1,5 +1,6 @@
-import Link from "next/link";
 "use client";
+
+import Link from "next/link";
 
 import { type FormEvent, useState } from "react";
 import { ArrowLeft, Bot, LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
@@ -93,7 +94,7 @@ export default function InvestigationsPage() {
   return (
     <main className="min-h-screen bg-[#060b16] px-5 py-8 text-slate-100 md:px-8">
       <div className="mx-auto max-w-7xl">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-300" href="/">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-300">
           <ArrowLeft className="h-4 w-4" /> Back to risk overview
         </Link>
 

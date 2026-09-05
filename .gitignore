@@ -18,3 +18,6 @@ data/processed/
 # Editor and system files
 .vscode/
 .DS_Store
+
+# Local trained-model artifacts
+services/inference/artifacts/
