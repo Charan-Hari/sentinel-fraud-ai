@@ -2,7 +2,7 @@
 title: Sentinel Fraud Risk Command Center
 emoji: 🛡️
 colorFrom: blue
-colorTo: cyan
+colorTo: blue
 sdk: static
 pinned: false
 ---
