@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CaseWorkflow } from "@/components/case-workflow";
 import { Suspense, type FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -302,6 +303,23 @@ function InvestigationWorkspace() {
             )}
           </section>
         </div>
+
+        {result && (
+          <CaseWorkflow
+            aiBrief={brief}
+            riskBand={result.riskBand}
+            riskScore={result.riskScore}
+            supportingSignals={result.supportingSignals}
+            transaction={{
+              transactionType: values.transactionType,
+              amount: Number(values.amount),
+              originBalanceBefore: Number(values.originBalanceBefore),
+              originBalanceAfter: Number(values.originBalanceAfter),
+              destinationBalanceBefore: Number(values.destinationBalanceBefore),
+              destinationBalanceAfter: Number(values.destinationBalanceAfter),
+            }}
+          />
+        )}
       </div>
     </main>
   );

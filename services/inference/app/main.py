@@ -1,11 +1,20 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 import joblib
 from fastapi import FastAPI, HTTPException, Query, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.case_store import (
+    CaseNotFoundError,
+    InvalidCaseTransitionError,
+    case_events,
+    create_case,
+    initialize_database,
+    transition_case,
+)
 from app.copilot import generate_case_summary
 from app.dashboard import build_dashboard
 from app.features import build_features
@@ -41,6 +50,18 @@ class CaseSummaryRequest(BaseModel):
     riskScore: float = Field(ge=0, le=100)
     riskBand: str = Field(min_length=1, max_length=20)
     supportingSignals: list[RiskSignal] = Field(max_length=10)
+
+
+class CaseCreateRequest(BaseModel):
+    transaction: TransactionRequest
+    riskScore: float = Field(ge=0, le=100)
+    riskBand: str = Field(min_length=1, max_length=20)
+    supportingSignals: list[RiskSignal] = Field(max_length=10)
+    aiBrief: str | None = Field(default=None, max_length=5000)
+
+
+class CaseStatusRequest(BaseModel):
+    status: Literal["ESCALATED", "CLOSED"]
 
 
 class IngestionRequest(BaseModel):
@@ -97,6 +118,8 @@ async def lifespan(app: FastAPI):
             f"Model artifact not found at {MODEL_PATH}. Run the training script first."
         )
 
+    initialize_database()
+    initialize_database()
     app.state.model = joblib.load(MODEL_PATH)
     app.state.dashboard_cache = {}
     yield
@@ -219,3 +242,28 @@ def case_summary(payload: CaseSummaryRequest) -> dict:
         "model": "Qwen/Qwen2.5-1.5B-Instruct",
         "notice": "AI output is an investigator aid and requires human review.",
     }
+
+@app.post("/cases", status_code=201)
+def create_investigation_case(payload: CaseCreateRequest) -> dict:
+    case = create_case(payload.model_dump(mode="json"))
+    return {"case": case, "events": case_events(case["id"])}
+
+
+@app.patch("/cases/{case_id}")
+def update_investigation_case(case_id: str, payload: CaseStatusRequest) -> dict:
+    try:
+        case = transition_case(case_id, payload.status)
+    except CaseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Case not found.") from error
+    except InvalidCaseTransitionError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+    return {"case": case, "events": case_events(case_id)}
+
+
+@app.get("/cases/{case_id}/events")
+def investigation_case_events(case_id: str) -> dict:
+    try:
+        return {"events": case_events(case_id)}
+    except CaseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Case not found.") from error
