@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Download, FilePlus2, LoaderCircle, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Download, FilePlus2, LoaderCircle } from "lucide-react";
 
 type Signal = { name: string; detail: string };
 

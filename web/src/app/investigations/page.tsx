@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { CaseWorkflow } from "@/components/case-workflow";
-import { Suspense, type FormEvent, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, type FormEvent, useState } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -61,7 +60,6 @@ function InvestigationWorkspace() {
   const [loadedFromDashboard, setLoadedFromDashboard] = useState(false);
   const [brief, setBrief] = useState("");
   const [briefLoading, setBriefLoading] = useState(false);
-  const searchParams = useSearchParams();
 
   function updateValue(key: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -289,6 +287,34 @@ function InvestigationWorkspace() {
                     <p className="mt-2 text-sm leading-6 text-slate-600">Use this score to prioritize investigation, not as an autonomous decision.</p>
                   </div>
                 </div>
+
+                <section className="mt-7 rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-violet-950">AI investigator brief</p>
+                      <p className="mt-1 text-sm text-violet-800">
+                        Generate a grounded summary from the model score and supporting evidence.
+                      </p>
+                    </div>
+                    <button
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-60"
+                      disabled={briefLoading}
+                      onClick={() => void generateBrief()}
+                      type="button"
+                    >
+                      {briefLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                      {briefLoading ? "Generating brief..." : "Generate AI brief"}
+                    </button>
+                  </div>
+                  {brief && (
+                    <article className="mt-4 rounded-xl border border-violet-200 bg-white p-4">
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{brief}</p>
+                      <p className="mt-3 text-xs text-slate-500">
+                        AI output is an investigator aid and requires human review.
+                      </p>
+                    </article>
+                  )}
+                </section>
 
                 <h3 className="mt-7 text-base font-semibold text-slate-950">Supporting review signals</h3>
                 <div className="mt-3 space-y-3">
